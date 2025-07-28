@@ -1,0 +1,98 @@
+#!/bin/bash
+
+# Função de ajuda
+mostrar_ajuda() {
+    echo "$0 - Traduz nomes de diretórios para outro idioma usando translate-shell"
+    echo
+    echo "Uso: $0 [opções] dir1 [dir2 ...]"
+    echo ""
+    echo "Opções:"
+    echo "  -t <idioma>         Especifica o idioma de destino (ex: en, es, fr)"
+    echo "  --list-languages    Lista os idiomas suportados pelo translate-shell"
+    echo "  --help              Mostra esta ajuda"
+    echo ""
+    echo "Se nenhum idioma for especificado, o script usará o idioma do sistema."
+    echo "Exemplos:"
+    echo "  $0 pasta1 pasta_de_testes"
+    echo "  $0 -t es documentos pessoais"
+    echo "  $0 --list-languages"
+    exit 0
+}
+
+# Detecta idioma do sistema
+IDIOMA_SISTEMA=$(echo "$LANG" | cut -d'.' -f1 | cut -d'_' -f1)
+IDIOMA_DESTINO="$IDIOMA_SISTEMA"
+
+# Processa opções
+while [[ "$1" == -* ]]; do
+    case "$1" in
+        -t)
+            shift
+            IDIOMA_DESTINO="$1"
+            shift
+            ;;
+        --list-languages)
+            echo "🌍 Idiomas suportados pelo translate-shell:"
+            trans -R
+            exit 0
+            ;;
+        --help)
+            mostrar_ajuda
+            ;;
+        *)
+            echo "❌ Opção inválida: $1"
+            mostrar_ajuda
+            ;;
+    esac
+done
+
+# Verifica se translate-shell está instalado
+if ! command -v trans &> /dev/null; then
+    echo "translate-shell não está instalado. Instale com:"
+    echo "  sudo apt install translate-shell"
+    exit 1
+fi
+
+# Verifica se diretórios foram fornecidos
+if [ "$#" -eq 0 ]; then
+    echo "⚠️ Nenhum diretório especificado."
+    mostrar_ajuda
+fi
+
+# Processa cada diretório
+for DIR in "$@"; do
+    if [ -d "$DIR" ]; then
+        BASENAME=$(basename "$DIR")
+
+        # Detecta separador
+        if [[ "$BASENAME" == *"_"* ]]; then
+            SEPARADOR="_"
+        elif [[ "$BASENAME" == *"-"* ]]; then
+            SEPARADOR="-"
+        elif [[ "$BASENAME" == *"."* ]]; then
+            SEPARADOR="."
+        else
+            SEPARADOR=" "
+        fi
+
+        # Divide e traduz cada palavra
+        IFS="$SEPARADOR" read -ra PALAVRAS <<< "$BASENAME"
+        PALAVRAS_TRADUZIDAS=()
+
+        for PALAVRA in "${PALAVRAS[@]}"; do
+            TRADUZIDA=$(trans -b ":$IDIOMA_DESTINO" "$PALAVRA" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g')
+            PALAVRAS_TRADUZIDAS+=("$TRADUZIDA")
+        done
+
+        TRADUZIDO_LIMPO=$(IFS="$SEPARADOR"; echo "${PALAVRAS_TRADUZIDAS[*]}")
+        NOVO_NOME="${TRADUZIDO_LIMPO}"
+
+        # Renomeia diretório
+        mv "$DIR" "$(dirname "$DIR")/$NOVO_NOME"
+        echo "📁 Renomeado: $BASENAME → $NOVO_NOME"
+    else
+        echo "⚠️ Diretório não encontrado: $DIR"
+    fi
+done
+
+
