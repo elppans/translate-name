@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2155
 
 # Função: Mostrar ajuda
 mostrar_ajuda() {
@@ -93,10 +94,8 @@ traduzir_nome() {
 # Função: Traduzir arquivo
 traduzir_arquivo() {
     local ARQ="$1"
-    BASENAME=$(basename "$ARQ")
-    DIRNAME=$(dirname "$ARQ")
-    local BASENAME
-    local DIRNAME
+    local BASENAME=$(basename "$ARQ")
+    local DIRNAME=$(dirname "$ARQ")
     local NOME EXT
 
     if [[ "$BASENAME" == *.* ]]; then
@@ -119,10 +118,8 @@ traduzir_arquivo() {
 # Função: Traduzir diretório
 traduzir_diretorio() {
     local DIR="$1"
-    BASENAME=$(basename "$DIR")
-    DIRNAME=$(dirname "$DIR")
-    local BASENAME
-    local DIRNAME
+    local BASENAME=$(basename "$DIR")
+    local DIRNAME=$(dirname "$DIR")
     local SEPARADOR
     SEPARADOR=$(detectar_separador "$BASENAME")
     local NOVO_NOME
