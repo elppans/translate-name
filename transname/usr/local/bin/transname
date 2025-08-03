@@ -84,11 +84,13 @@ traduzir_nome() {
 
     for PARTE in "${PARTES[@]}"; do
         local T
-        T=$(trans -b ":$IDIOMA_DESTINO" "$PARTE" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g')
+        # T=$(trans -b ":$IDIOMA_DESTINO" "$PARTE" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g')
+        T=$(trans -brief -no-ansi ":$IDIOMA_DESTINO" "$PARTE" 2>/dev/null | head -n 1 | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g')
+
         TRADUZIDAS+=("$T")
     done
 
-    IFS="$SEPARADOR"; echo "${TRADUZIDAS[*]}" | tr ' ' '-'
+    IFS="$SEPARADOR"; echo "${TRADUZIDAS[*]}"
 
 }
 
