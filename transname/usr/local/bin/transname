@@ -93,8 +93,10 @@ traduzir_nome() {
 # Função: Traduzir arquivo
 traduzir_arquivo() {
     local ARQ="$1"
-    local BASENAME=$(basename "$ARQ")
-    local DIRNAME=$(dirname "$ARQ")
+    BASENAME=$(basename "$ARQ")
+    DIRNAME=$(dirname "$ARQ")
+    local BASENAME
+    local DIRNAME
     local NOME EXT
 
     if [[ "$BASENAME" == *.* ]]; then
@@ -117,8 +119,10 @@ traduzir_arquivo() {
 # Função: Traduzir diretório
 traduzir_diretorio() {
     local DIR="$1"
-    local BASENAME=$(basename "$DIR")
-    local DIRNAME=$(dirname "$DIR")
+    BASENAME=$(basename "$DIR")
+    DIRNAME=$(dirname "$DIR")
+    local BASENAME
+    local DIRNAME
     local SEPARADOR
     SEPARADOR=$(detectar_separador "$BASENAME")
     local NOVO_NOME
