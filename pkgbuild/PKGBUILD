@@ -1,7 +1,7 @@
 # Maintainer: Marcelo K. <elppansmk@...>
 # shellcheck disable=all
 
-pkgname=transname
+pkgname=translate-name
 pkgver=$(date +%y.%m.%d)
 pkgrel=$(date +%H%M)
 arch=('any')
