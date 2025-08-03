@@ -29,13 +29,13 @@ makepkg -Cris
 ### 🧪 Exemplo de uso
 
 ```bash
-transdirname -t en pasta_exemplo
+transname -t en pasta_exemplo
 ```
 
 Isso irá renomear `pasta_exemplo` traduzindo nomes de diretórios de português para inglês.
 
 ```bash
-transdirname exemple_file
+transname exemple_file
 ```
 
 Isso irá renomear `exemple_file` traduzindo nomes de arquivos de inglês para o idioma do sistema.
