@@ -1,5 +1,5 @@
 #!/bin/bash
-# shellcheck disable=SC2155
+# shellcheck disable=SC2155,SC2001
 
 # Função: Mostrar ajuda
 mostrar_ajuda() {
@@ -75,11 +75,23 @@ detectar_separador() {
     fi
 }
 
+separar_camel_case() {
+    local NOME="$1"
+    echo "$NOME" | sed 's/\([a-z]\)\([A-Z]\)/\1 \2/g'
+}
+
 # Função: Traduzir partes do nome
 traduzir_nome() {
     local NOME="$1"
     local SEPARADOR="$2"
-    IFS="$SEPARADOR" read -ra PARTES <<< "$NOME"
+
+    if [[ "$SEPARADOR" == " " ]]; then
+        NOME=$(separar_camel_case "$NOME")
+        IFS=" " read -ra PARTES <<< "$NOME"
+    else
+        IFS="$SEPARADOR" read -ra PARTES <<< "$NOME"
+    fi
+
     local TRADUZIDAS=()
 
     for PARTE in "${PARTES[@]}"; do
