@@ -9,7 +9,7 @@ license=('GPL')
 depends=('translate-shell')
 url="https://github.com/elppans/$pkgname"
 pkgdesc="Rename files and folders with automatic name translation."
-source=("git+https://github.com/elppans/$pkgname.git")
+source=("git+$url.git#branch=main")
 md5sums=(SKIP)
 
 package() {
@@ -34,4 +34,3 @@ package() {
         cp -r "${InternalDir}/opt" "${pkgdir}/"
     fi
 }
-
