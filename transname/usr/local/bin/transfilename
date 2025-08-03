@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Função de ajuda
+# Função: Mostrar ajuda
 mostrar_ajuda() {
     echo "$0 - Traduz nomes de arquivos para outro idioma usando translate-shell"
     echo
@@ -19,88 +19,109 @@ mostrar_ajuda() {
     exit 0
 }
 
-# Detecta idioma do sistema
-IDIOMA_SISTEMA=$(echo "$LANG" | cut -d'.' -f1 | cut -d'_' -f1)
-IDIOMA_DESTINO="$IDIOMA_SISTEMA"
+# Função: Detectar idioma do sistema
+detectar_idioma_sistema() {
+    echo "$LANG" | cut -d'.' -f1 | cut -d'_' -f1
+}
 
-# Processa opções
-while [[ "$1" == -* ]]; do
-    case "$1" in
-        -t)
-            shift
-            IDIOMA_DESTINO="$1"
-            shift
-            ;;
-        --list-languages)
-            echo "🌍 Idiomas suportados pelo translate-shell:"
-            trans -R
-            exit 0
-            ;;
-        --help)
-            mostrar_ajuda
-            ;;
-        *)
-            echo "❌ Opção inválida: $1"
-            mostrar_ajuda
-            ;;
-    esac
-done
-
-# Verifica se translate-shell está instalado
-if ! command -v trans &> /dev/null; then
-    echo "translate-shell não está instalado. Instale com:"
-    echo "  sudo apt install translate-shell"
-    exit 1
-fi
-
-# Verifica se arquivos foram fornecidos
-if [ "$#" -eq 0 ]; then
-    echo "⚠️ Nenhum arquivo especificado."
-    mostrar_ajuda
-fi
-
-# Processa cada arquivo
-for ARQ in "$@"; do
-    if [ -f "$ARQ" ]; then
-        BASENAME=$(basename "$ARQ")
-
-        # Separa nome e extensão
-        if [[ "$BASENAME" == *.* ]]; then
-            NOME="${BASENAME%.*}"
-            EXT=".${BASENAME##*.}"
-        else
-            NOME="$BASENAME"
-            EXT=""
-        fi
-
-        # Detecta separador principal
-        if [[ "$NOME" == *"_"* ]]; then
-            SEPARADOR="_"
-        elif [[ "$NOME" == *"-"* ]]; then
-            SEPARADOR="-"
-        elif [[ "$NOME" == *"."* ]]; then
-            SEPARADOR="."
-        else
-            SEPARADOR=" "
-        fi
-
-        # Divide e traduz cada palavra
-        IFS="$SEPARADOR" read -ra PALAVRAS <<< "$NOME"
-        PALAVRAS_TRADUZIDAS=()
-
-        for PALAVRA in "${PALAVRAS[@]}"; do
-            TRADUZIDA=$(trans -b ":$IDIOMA_DESTINO" "$PALAVRA" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g')
-            PALAVRAS_TRADUZIDAS+=("$TRADUZIDA")
-        done
-
-        # Junta com o separador original
-        TRADUZIDO_LIMPO=$(IFS="$SEPARADOR"; echo "${PALAVRAS_TRADUZIDAS[*]}")
-        NOVO_NOME="${TRADUZIDO_LIMPO}${EXT}"
-
-        mv "$ARQ" "$(dirname "$ARQ")/$NOVO_NOME"
-        echo "✅ Renomeado: $BASENAME → $NOVO_NOME"
-    else
-        echo "⚠️ Arquivo não encontrado: $ARQ"
+# Função: Verificar dependências
+verificar_dependencias() {
+    if ! command -v trans &> /dev/null; then
+        echo "translate-shell não está instalado. Instale com:"
+        echo "  sudo apt install translate-shell"
+        exit 1
     fi
-done
+}
 
+# Função: Processar argumentos
+processar_argumentos() {
+    while [[ "$1" == -* ]]; do
+        case "$1" in
+            -t)
+                shift
+                IDIOMA_DESTINO="$1"
+                shift
+                ;;
+            --list-languages)
+                echo "🌍 Idiomas suportados pelo translate-shell:"
+                trans -R
+                exit 0
+                ;;
+            --help)
+                mostrar_ajuda
+                ;;
+            *)
+                echo "❌ Opção inválida: $1"
+                mostrar_ajuda
+                ;;
+        esac
+    done
+    ARQUIVOS=("$@")
+}
+
+# Função: Traduzir e renomear arquivo
+traduzir_arquivo() {
+    local ARQ="$1"
+
+    if [ ! -f "$ARQ" ]; then
+        echo "⚠️ Arquivo não encontrado: $ARQ"
+        return
+    fi
+
+    local BASENAME=$(basename "$ARQ")
+    local DIRNAME=$(dirname "$ARQ")
+    local NOME EXT SEPARADOR
+
+    if [[ "$BASENAME" == *.* ]]; then
+        NOME="${BASENAME%.*}"
+        EXT=".${BASENAME##*.}"
+    else
+        NOME="$BASENAME"
+        EXT=""
+    fi
+
+    if [[ "$NOME" == *"_"* ]]; then
+        SEPARADOR="_"
+    elif [[ "$NOME" == *"-"* ]]; then
+        SEPARADOR="-"
+    elif [[ "$NOME" == *"."* ]]; then
+        SEPARADOR="."
+    else
+        SEPARADOR=" "
+    fi
+
+    IFS="$SEPARADOR" read -ra PALAVRAS <<< "$NOME"
+    PALAVRAS_TRADUZIDAS=()
+
+    for PALAVRA in "${PALAVRAS[@]}"; do
+        TRADUZIDA=$(trans -b ":$IDIOMA_DESTINO" "$PALAVRA" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g')
+        PALAVRAS_TRADUZIDAS+=("$TRADUZIDA")
+    done
+
+    local TRADUZIDO_LIMPO
+    TRADUZIDO_LIMPO=$(IFS="$SEPARADOR"; echo "${PALAVRAS_TRADUZIDAS[*]}")
+    local NOVO_NOME="${TRADUZIDO_LIMPO}${EXT}"
+
+    mv "$ARQ" "$DIRNAME/$NOVO_NOME"
+    echo "✅ Renomeado: $BASENAME → $NOVO_NOME"
+}
+
+# Função principal
+main() {
+    IDIOMA_DESTINO=$(detectar_idioma_sistema)
+
+    processar_argumentos "$@"
+    verificar_dependencias
+
+    if [ "${#ARQUIVOS[@]}" -eq 0 ]; then
+        echo "⚠️ Nenhum arquivo especificado."
+        mostrar_ajuda
+    fi
+
+    for ARQ in "${ARQUIVOS[@]}"; do
+        traduzir_arquivo "$ARQ"
+    done
+}
+
+# Execução
+main "$@"

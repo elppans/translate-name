@@ -1,0 +1,155 @@
+#!/bin/bash
+
+# Função: Mostrar ajuda
+mostrar_ajuda() {
+    echo "$0 - Traduz nomes de arquivos e diretórios para outro idioma usando translate-shell"
+    echo
+    echo "Uso: $0 [opções] entrada1 [entrada2 ...]"
+    echo
+    echo "Opções:"
+    echo "  -t <idioma>         Especifica o idioma de destino (ex: en, es, fr)"
+    echo "  --list-languages    Lista os idiomas suportados pelo translate-shell"
+    echo "  --help              Mostra esta ajuda"
+    echo
+    echo "Se nenhum idioma for especificado, o script usará o idioma do sistema."
+    echo
+    echo "Exemplos:"
+    echo "  $0 relatorio.txt pasta_imagens"
+    echo "  $0 -t en documentos fotos"
+    echo "  $0 --list-languages"
+    exit 0
+}
+
+# Função: Detectar idioma do sistema
+detectar_idioma_sistema() {
+    echo "$LANG" | cut -d'.' -f1 | cut -d'_' -f1
+}
+
+# Função: Verificar dependências
+verificar_dependencias() {
+    if ! command -v trans &> /dev/null; then
+        echo "translate-shell não está instalado. Instale com:"
+        echo "  sudo apt install translate-shell"
+        exit 1
+    fi
+}
+
+# Função: Processar argumentos
+processar_argumentos() {
+    while [[ "$1" == -* ]]; do
+        case "$1" in
+            -t)
+                shift
+                IDIOMA_DESTINO="$1"
+                shift
+                ;;
+            --list-languages)
+                echo "🌍 Idiomas suportados pelo translate-shell:"
+                trans -R
+                exit 0
+                ;;
+            --help)
+                mostrar_ajuda
+                ;;
+            *)
+                echo "❌ Opção inválida: $1"
+                mostrar_ajuda
+                ;;
+        esac
+    done
+    ENTRADAS=("$@")
+}
+
+# Função: Determinar separador do nome
+detectar_separador() {
+    local NOME="$1"
+    if [[ "$NOME" == *"_"* ]]; then
+        echo "_"
+    elif [[ "$NOME" == *"-"* ]]; then
+        echo "-"
+    elif [[ "$NOME" == *"."* ]]; then
+        echo "."
+    else
+        echo " "
+    fi
+}
+
+# Função: Traduzir partes do nome
+traduzir_nome() {
+    local NOME="$1"
+    local SEPARADOR="$2"
+    IFS="$SEPARADOR" read -ra PARTES <<< "$NOME"
+    local TRADUZIDAS=()
+
+    for PARTE in "${PARTES[@]}"; do
+        local T
+        T=$(trans -b ":$IDIOMA_DESTINO" "$PARTE" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g')
+        TRADUZIDAS+=("$T")
+    done
+
+    IFS="$SEPARADOR"; echo "${TRADUZIDAS[*]}"
+}
+
+# Função: Traduzir arquivo
+traduzir_arquivo() {
+    local ARQ="$1"
+    local BASENAME=$(basename "$ARQ")
+    local DIRNAME=$(dirname "$ARQ")
+    local NOME EXT
+
+    if [[ "$BASENAME" == *.* ]]; then
+        NOME="${BASENAME%.*}"
+        EXT=".${BASENAME##*.}"
+    else
+        NOME="$BASENAME"
+        EXT=""
+    fi
+
+    local SEPARADOR
+    SEPARADOR=$(detectar_separador "$NOME")
+    local NOVO_NOME
+    NOVO_NOME="$(traduzir_nome "$NOME" "$SEPARADOR")${EXT}"
+
+    mv "$ARQ" "$DIRNAME/$NOVO_NOME"
+    echo "✅ Arquivo renomeado: $BASENAME → $NOVO_NOME"
+}
+
+# Função: Traduzir diretório
+traduzir_diretorio() {
+    local DIR="$1"
+    local BASENAME=$(basename "$DIR")
+    local DIRNAME=$(dirname "$DIR")
+    local SEPARADOR
+    SEPARADOR=$(detectar_separador "$BASENAME")
+    local NOVO_NOME
+    NOVO_NOME=$(traduzir_nome "$BASENAME" "$SEPARADOR")
+
+    mv "$DIR" "$DIRNAME/$NOVO_NOME"
+    echo "📁 Diretório renomeado: $BASENAME → $NOVO_NOME"
+}
+
+# Função principal
+main() {
+    IDIOMA_DESTINO=$(detectar_idioma_sistema)
+
+    processar_argumentos "$@"
+    verificar_dependencias
+
+    if [ "${#ENTRADAS[@]}" -eq 0 ]; then
+        echo "⚠️ Nenhum arquivo ou diretório especificado."
+        mostrar_ajuda
+    fi
+
+    for ITEM in "${ENTRADAS[@]}"; do
+        if [ -f "$ITEM" ]; then
+            traduzir_arquivo "$ITEM"
+        elif [ -d "$ITEM" ]; then
+            traduzir_diretorio "$ITEM"
+        else
+            echo "⚠️ Caminho inválido ou não encontrado: $ITEM"
+        fi
+    done
+}
+
+# Execução
+main "$@"
